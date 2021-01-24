@@ -9,8 +9,6 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.client.util.Base64;
-import com.google.api.client.util.StringUtils;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
@@ -82,64 +80,69 @@ public class AddingProjectToExcel {
         System.out.println("Podaj liczbę dni, z których chcesz sprawdzić wiadomości (wliczając dzisiaj)");
         int daysNumber = scanner.nextInt();
 
-        //List of messages meeting the criteria
-        ListMessagesResponse listMessages = service.users().messages().list(user).setQ("subject:WEProof project AND newer_than:"+daysNumber+"d").execute();
-        System.out.println("Wiadomości spełniające kryteria: " + listMessages.toPrettyString());
-
-        //Create ArrayList to put there all messages
-        List<Message> messages = new ArrayList<Message>();
-
 
         try {
-            messages.addAll(listMessages.getMessages());
 
-            //Print all found messages + number of found messages
-            Long msgCount = listMessages.getResultSizeEstimate();
+            //Create ArrayList to put there all messages
+            ArrayList<Message> messages = new ArrayList<Message>();
+
+            //List of messages meeting the criteria
+            ListMessagesResponse listMessages = service.users().messages().list(user).setQ("subject:WEProof project AND newer_than:" + daysNumber + "d").execute();
+
+            //adding messages to ArrayList
+            messages.addAll(listMessages.getMessages());
+            System.out.println("Wiadomości spełniające kryteria (strona 1): " + listMessages.toPrettyString());
+
+            //check if there are more than one page available (if yes nextPageToken is displayed with first results of listMessages)
+            int k = 2;
+            while (listMessages.getNextPageToken() != null) {
+
+                String token = listMessages.getNextPageToken();
+                listMessages = service.users().messages().list(user).setQ("subject:WEProof project AND newer_than:" + daysNumber + "d").setPageToken(token).execute();
+                messages.addAll(listMessages.getMessages());
+                System.out.println("Wiadomości spełniające kryteria (strona "+k+"): " + listMessages.toPrettyString());
+                k++;
+            }
+
             System.out.println("");
-            System.out.println("Liczba znalezionych wiadomości: " + msgCount);
+            System.out.println("Liczba znalezionych wiadomości: " + messages.size());
 
 
 
             //process only messages with project - first in thread (message ID the same as thread ID)
-            for (int i = 0; i < msgCount; ) {
+            for (int i = 0; i < messages.size(); ) {
 
                 Message message = messages.get(i);
                 System.out.println("");
                 System.out.println("Message " + i + " ID: " + message.getId());
                 System.out.println("Message id and message thread id: " + message.getId() + " thread: "+ message.getThreadId());
-
+                System.out.println("Index 'i': "+i);
                 if (message.getId().equals(message.getThreadId())) {
 
                     Message gmailMessage = service.users().messages().get(user, message.getId()).setFormat("full").execute();
 
-                    String html = new String();
+                    String content = gmailMessage.getSnippet();
 
-                    //check if there is attachment (formula of finding message body is different when there is attachment)
+                    //check if there is attachment
                     if (gmailMessage.getPayload().getBody().getData() == null) {
-                    //when tested on my mailbox: if (gmailMessage.getPayload().getParts().get(1).getBody().getAttachmentId() == null) {
                         System.out.println("Jest załącznik.");
-                        //when tested on my mailbox: html = StringUtils.newStringUtf8(Base64.decodeBase64(gmailMessage.getPayload().getParts().get(0).getParts().get(1).getBody().getData()));
-                        html = StringUtils.newStringUtf8(Base64.decodeBase64(gmailMessage.getPayload().getParts().get(0).getBody().getData()));
-
-
                     } else {
                     System.out.println("Nie ma załącznika.");
-                       // when tested on my mailbox: html = StringUtils.newStringUtf8(Base64.decodeBase64(gmailMessage.getPayload().getParts().get(1).getBody().getData()));
-                    html = StringUtils.newStringUtf8(Base64.decodeBase64(gmailMessage.getPayload().getBody().getData()));
                     }
 
-                    //parse message into html format
+                    /* parse message into html format
                     Document doc = Jsoup.parse(html);
-                    //only text from html:
-                    //String contentText = doc.body().text();
+                    only text from html:
+                    String contentText = doc.body().text();
 
-                    //extracting particular part of message between certain html tags
+                    extracting particular part of message between certain html tags
                     Elements bTexts = doc.getElementsByTag("span");
                     String btextText = bTexts.text();
-                    System.out.println("btext" + btextText);
+                    System.out.println("btext" + btextText); */
 
                     //spliting content to parts to put it to cells in Excel file
-                    String[] parts = btextText.split(" ");
+                    //String[] parts = btextText.split(" ");
+                    String[] parts = content.split(" ");
                     String part3 = parts[1]; // "Project"
                     String part4 = parts[2]; //Project_name
                     String part5 = parts[3]; //"Value"
@@ -332,9 +335,11 @@ public class AddingProjectToExcel {
                     }
                 }
                 i++;
+                System.out.println("Jeszcze raz index:" +i);
             }
         } catch (NullPointerException e){
             System.out.println("Nie znaleziono wiadomości spełniających kryteria.");
+
         }
     }
 }
