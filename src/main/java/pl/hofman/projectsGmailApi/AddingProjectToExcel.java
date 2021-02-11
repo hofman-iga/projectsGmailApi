@@ -35,7 +35,7 @@ public class AddingProjectToExcel {
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
 
     /**
-     * Global instance of the scopes required by this quickstart.
+     * Global instance of the scopes required by this app.
      * If modifying these scopes, delete your previously saved tokens/ folder.
      */
     private static final List<String> SCOPES = Collections.singletonList(GmailScopes.GMAIL_MODIFY);
