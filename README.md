@@ -25,9 +25,9 @@ To run this project, install it locally:
 ```
 $ git clone git@github.com:hofman-iga/projectsGmailApi.git
 
-In the directory with jar file:
+Then run the following command in a terminal window (in the complete) directory:
 
-$ java -jar gmailApi.jar
+$ mvnw spring-boot:run
 ```
 
 ## Usage
