@@ -4,25 +4,62 @@ import com.google.api.services.gmail.model.Message;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbookFactory;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
+import java.io.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class FileProcessor {
 
-    public static String choosingFile(Message gmailMessage) {
+    MessageProcessor messageProcessor;
+
+    public FileProcessor(MessageProcessor messageProcessor){
+        this.messageProcessor = messageProcessor;
+    }
+
+    public void saveMessagesInTheFile(List<Message> mainGmailMessagesInThread) throws NullPointerException, IOException {
+        XSSFWorkbook workbook;
         String fileName = null;
 
-        String deadline = MessageProcessor.getDeadline(gmailMessage);
-        String projectName = MessageProcessor.getProjectName(gmailMessage);
-        System.out.println("DEADLINE FROM FILE PROCESSOR: " + deadline + "NAME " + projectName);
+        for (Message msg : mainGmailMessagesInThread) {
+            Project project = new Project(msg, messageProcessor);
+            fileName = choosingFileName(msg, project);
+            //String projectName = project.getProjectName(msg, messageProcessor);
+
+            try {
+                FileInputStream inputStream = new FileInputStream(new File(fileName));
+                workbook = (XSSFWorkbook) XSSFWorkbookFactory.create(inputStream);
+//                sheet = workbook.getSheetAt(0);
+            } catch (FileNotFoundException e) {
+
+                workbook = createFile();
+            } catch (IOException e){
+                throw new IOException("Not possible to create file " + fileName);
+            }
+            messageProcessor.singleProjectMessagesDisplay(msg);
+
+            try {
+                addNewMsgToTheFile(fileName, workbook, project, msg);
+            } catch (IOException e) {
+                throw new IOException("Not possible to add message " + msg.getId() + " to the file " + fileName);
+            }
+
+        }
+    }
+
+    private String choosingFileName(Message gmailMessage, Project project) {
+        String fileName = null;
+
+        String deadline = project.getDeadline();
+        String projectName = project.getName();
+        System.out.println("----------------------");
+        System.out.println("DEADLINE FROM FILE PROCESSOR: " + deadline + " PROJECT NAME: " + projectName);
 
         if (deadline.length() < 2) {
             System.out.println("Zły format deadline'u. Message ID: " + gmailMessage.getId()
@@ -89,12 +126,12 @@ public class FileProcessor {
     }
 
 
-    public static void addNewMsgToTheFile(String fileName, XSSFWorkbook workbook, Message gmailMessage) throws IOException {
+    private void addNewMsgToTheFile(String fileName, XSSFWorkbook workbook, Project project, Message gmailMessage) throws IOException {
 
         boolean checkIfExists = false;
-        String projectName = MessageProcessor.getProjectName(gmailMessage);
-        String value = MessageProcessor.getValue(gmailMessage);
-        String deadline = MessageProcessor.getDeadline(gmailMessage);
+        String projectName = project.getName();
+        String value = project.getValue();
+        String deadline = project.getDeadline();
         XSSFSheet sheet = workbook.getSheetAt(0);
 
         //check all rows if message that was found already exist in the Excel file (checking by ID of message)
@@ -157,7 +194,7 @@ public class FileProcessor {
         }
     }
 
-    public static XSSFWorkbook createFile() {
+    public XSSFWorkbook createFile() {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet;
         workbook = new XSSFWorkbook();
@@ -204,4 +241,6 @@ public class FileProcessor {
 
         return workbook;
     }
+
+
 }
