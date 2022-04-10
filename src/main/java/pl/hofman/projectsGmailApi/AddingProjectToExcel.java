@@ -17,7 +17,7 @@ import static pl.hofman.projectsGmailApi.AuthGmail.*;
 public class AddingProjectToExcel {
 
 
-    public static void main(String... args) throws IOException, GeneralSecurityException, NullPointerException {
+    public static void main(String... args) throws IOException, GeneralSecurityException {
 
         // Build a new authorized API client service.
         final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
@@ -28,9 +28,20 @@ public class AddingProjectToExcel {
         String user = "me";
 
         //Ask user to give number of days in the past (including today) to check mails from
-        Scanner scanner = new Scanner(System.in);
+
         System.out.println("Podaj liczbę dni, z których chcesz sprawdzić wiadomości (wliczając dzisiaj)");
-        int daysNumber = scanner.nextInt();
+        int daysNumber=0;
+        boolean ifNumber = true;
+
+        while (ifNumber) {
+            try {
+                Scanner scanner = new Scanner(System.in);
+                daysNumber = scanner.nextInt();
+                ifNumber = false;
+            } catch (InputMismatchException e) {
+                System.out.println("Zły format danych, wprowadź liczbę");
+            }
+        }
 
         try {
             //Create ArrayList to put there all messages
@@ -64,15 +75,20 @@ public class AddingProjectToExcel {
 //            System.out.println("Wyświetlam wiadomości message PROJEKTOWE");
 //            MessageProcessor.messagesDisplay(mainMessages);
 //            System.out.println();
-//            System.out.println("Wyświetlam wiadomości GMAILmessage PROJEKTOWE z detalami");
-//            System.out.println();
-//            MessageProcessor.projectMessagesDisplay(mainGmailMessages);
-            System.out.println("Wiadomości projektowe do pliku:");
+            //System.out.println("Wyświetlam wiadomości GMAILmessage PROJEKTOWE z detalami");
+            System.out.println();
+            System.out.println("--------------------------------------------");
+            System.out.println("Wiadomości spełniające kryteria, szczegóły:");
+            System.out.println("--------------------------------------------");
+            MessageProcessor.projectMessagesDisplay(mainGmailMessages);
+            System.out.println("--------------------------------------------");
+            System.out.println("Zapisywanie wiaomości projektowych do pliku:");
+            System.out.println("--------------------------------------------");
             System.out.println();
             MessageProcessor.saveMessageInTheFile(mainGmailMessages);
 
         } catch (NullPointerException e) {
-            System.out.println("Nie znaleziono wiadomości spełniających kryteria.");
+            System.out.println("Nie udało się zapisać wiadomości do pliku.");
         }
     }
 }
