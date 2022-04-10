@@ -19,17 +19,20 @@ public class FileProcessor {
 
     MessageProcessor messageProcessor;
 
-    public FileProcessor(MessageProcessor messageProcessor){
+    public FileProcessor(MessageProcessor messageProcessor) {
         this.messageProcessor = messageProcessor;
     }
 
     public void saveMessagesInTheFile(List<Message> mainGmailMessagesInThread) throws NullPointerException, IOException {
         XSSFWorkbook workbook;
         String fileName = null;
+        System.out.printf("--------------------------------------------\n" +
+                        "Zapisywanie wiadomości projektowych do pliku:\n" +
+                        "--------------------------------------------\n\n" );
 
         for (Message msg : mainGmailMessagesInThread) {
             Project project = new Project(msg, messageProcessor);
-            fileName = choosingFileName(msg, project);
+            fileName = chooseFileName(msg, project);
             //String projectName = project.getProjectName(msg, messageProcessor);
 
             try {
@@ -39,7 +42,7 @@ public class FileProcessor {
             } catch (FileNotFoundException e) {
 
                 workbook = createFile();
-            } catch (IOException e){
+            } catch (IOException e) {
                 throw new IOException("Not possible to create file " + fileName);
             }
             messageProcessor.singleProjectMessagesDisplay(msg);
@@ -53,12 +56,12 @@ public class FileProcessor {
         }
     }
 
-    private String choosingFileName(Message gmailMessage, Project project) {
+    private String chooseFileName(Message gmailMessage, Project project) {
         String fileName = null;
 
         String deadline = project.getDeadline();
         String projectName = project.getName();
-        System.out.println("----------------------");
+        System.out.println("*****");
         System.out.println("DEADLINE FROM FILE PROCESSOR: " + deadline + " PROJECT NAME: " + projectName);
 
         if (deadline.length() < 2) {
@@ -139,7 +142,7 @@ public class FileProcessor {
         for (Row row : sheet) {
             Cell cel = row.getCell(0);
             if (cel.getStringCellValue().equals(gmailMessage.getId())) {
-                System.out.println("---Ta wiadomość już istnieje---");
+                System.out.println("---Ta wiadomość już w pliku istnieje---");
                 checkIfExists = true;
                 break;
             }
