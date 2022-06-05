@@ -1,6 +1,7 @@
 package pl.hofman.projectsGmailApi;
 
 import com.google.api.services.gmail.model.Message;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -10,10 +11,10 @@ import java.io.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 
 public class FileProcessor {
 
@@ -26,13 +27,13 @@ public class FileProcessor {
     public void saveMessagesInTheFile(List<Message> mainGmailMessagesInThread) throws NullPointerException, IOException {
         XSSFWorkbook workbook;
         String fileName = null;
-        System.out.printf("--------------------------------------------\n" +
-                        "Zapisywanie wiadomości projektowych do pliku:\n" +
-                        "--------------------------------------------\n\n" );
+        System.out.println("--------------------------------------------\n" +
+                "Zapisywanie wiadomości projektowych do pliku:\n" +
+                "--------------------------------------------\n\n");
 
         for (Message msg : mainGmailMessagesInThread) {
             Project project = new Project(msg, messageProcessor);
-            fileName = chooseFileName(msg, project);
+            fileName = chooseFileName(project);
             //String projectName = project.getProjectName(msg, messageProcessor);
 
             try {
@@ -42,9 +43,11 @@ public class FileProcessor {
             } catch (FileNotFoundException e) {
 
                 workbook = createFile();
+
             } catch (IOException e) {
                 throw new IOException("Not possible to create file " + fileName);
             }
+
             messageProcessor.singleProjectMessagesDisplay(msg);
 
             try {
@@ -56,85 +59,49 @@ public class FileProcessor {
         }
     }
 
-    private String chooseFileName(Message gmailMessage, Project project) {
+    private String chooseFileName(Project project) {
         String fileName = null;
+        String excelFileExtension = ".xlsx";
+        String errorFileName = "Error";
 
         String deadline = project.getDeadline();
         String projectName = project.getName();
-        System.out.println("*****");
-        System.out.println("DEADLINE FROM FILE PROCESSOR: " + deadline + " PROJECT NAME: " + projectName);
 
         if (deadline.length() < 2) {
-            System.out.println("Zły format deadline'u. Message ID: " + gmailMessage.getId()
-                    + "; wiadomość zapisana do pliku Error.xlsx");
-            fileName = "Error.xlsx";
+            fileName = errorFileName + excelFileExtension;
+            System.out.println(FileProcessorUtils.getWrongDeadlineFormatErrorMsg(project.getGmailMessage().getId(),
+                    projectName, fileName));
 
         } else if (deadline.equals("ASAP")) {
-            Date date = new Date(gmailMessage.getInternalDate());
+            Date date = new Date(project.getGmailMessage().getInternalDate());
             DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
             df.format(date);
             Calendar calendar = Calendar.getInstance();
             calendar.setTime(date);
             String month = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.ENGLISH);
 
-            //LocalDate currentDate = LocalDate.now();
-            //Month currentMonth = currentDate.getMonth();
-            fileName = month + ".xlsx";
+            fileName = month + excelFileExtension;
 
         } else {
-            switch (deadline.substring(3, 5)) {
-                case "01":
-                    fileName = "January.xlsx";
-                    break;
-                case "02":
-                    fileName = "February.xlsx";
-                    break;
-                case "03":
-                    fileName = "March.xlsx";
-                    break;
-                case "04":
-                    fileName = "April.xlsx";
-                    break;
-                case "05":
-                    fileName = "May.xlsx";
-                    break;
-                case "06":
-                    fileName = "June.xlsx";
-                    break;
-                case "07":
-                    fileName = "July.xlsx";
-                    break;
-                case "08":
-                    fileName = "August.xlsx";
-                    break;
-                case "09":
-                    fileName = "September.xlsx";
-                    break;
-                case "10":
-                    fileName = "October.xlsx";
-                    break;
-                case "11":
-                    fileName = "November.xlsx";
-                    break;
-                case "12":
-                    fileName = "December.xlsx";
-                    break;
-                default:
-                    System.out.println("Zły format deadline'u. Message ID: " + gmailMessage.getId()
-                            + ", projekt: " + projectName + "; wiadomość zapisana do pliku Error.xlsx");
-                    fileName = "Error.xlsx";
-            }
+
+            String deadlineMonth = deadline.substring(3, 5);
+            fileName = Optional.ofNullable(MonthEnum.getMonthByNumber(deadlineMonth))
+                    .map(monthEnum -> (monthEnum.getName() + excelFileExtension))
+                    .orElseGet(() -> {
+                        System.out.println(FileProcessorUtils.getWrongDeadlineFormatErrorMsg(project.getGmailMessage().getId(), projectName, errorFileName + excelFileExtension));
+                        return (errorFileName + excelFileExtension);
+                    });
         }
         return fileName;
     }
 
-
     private void addNewMsgToTheFile(String fileName, XSSFWorkbook workbook, Project project, Message gmailMessage) throws IOException {
 
         boolean checkIfExists = false;
-        String projectName = project.getName();
-        String value = project.getValue();
-        String deadline = project.getDeadline();
+
+        Map<Integer, Object> cellValues = FileProcessorUtils.createCellValuesMap(project);
+        Map<Integer, CellStyle> cellStyles = FileProcessorUtils.createCellStylesMap(workbook);
+
         XSSFSheet sheet = workbook.getSheetAt(0);
 
         //check all rows if message that was found already exist in the Excel file (checking by ID of message)
@@ -155,38 +122,11 @@ public class FileProcessor {
             //creating new row
             Row row = sheet.createRow(rowCount + 1);
 
-            //creating new cells
-
-            //Msg ID
-            Cell cell = row.createCell(0);
-            cell.setCellValue(gmailMessage.getId());
-
-            //Date of adding to the file
-            CreationHelper createHelper = workbook.getCreationHelper();
-            CellStyle cellStyle1 = workbook.createCellStyle();
-            cellStyle1.setDataFormat(createHelper.createDataFormat().getFormat("dd/mm/yyyy"));
-            Cell cell1 = row.createCell(1);
-            cell1.setCellValue(LocalDate.now());
-            cell1.setCellStyle(cellStyle1);
-
-            //Project name
-            Cell cell2 = row.createCell(2);
-            cell2.setCellValue(projectName);
-
-            //Value
-            Cell cell3 = row.createCell(3);
-            cell3.setCellValue(value);
-
-            //Deadline
-            Cell cell4 = row.createCell(4);
-            cell4.setCellValue(deadline);
-
-            //Date of receiving mail
-            Cell cell5 = row.createCell(5);
-            Date date = new Date(gmailMessage.getInternalDate());
-            DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
-            cell5.setCellValue(df.format(date));
-
+            //creating new columns in row
+            List<Cell> cells =
+                    IntStream.range(0, cellValues.size())
+                            .mapToObj(i -> createCell(row, i, cellStyles.get(i), cellValues.get(i)))
+                            .collect(Collectors.toList());
 
             // Write the output to the file
             FileOutputStream fileOut = new FileOutputStream(fileName);
@@ -204,36 +144,13 @@ public class FileProcessor {
         sheet = workbook.createSheet("Sheet1");
         Row row0 = sheet.createRow(0);
 
-        Font font = workbook.createFont();
-        font.setBold(true);
-        CellStyle style = workbook.createCellStyle();
-        style.setFillForegroundColor(IndexedColors.LIGHT_ORANGE.getIndex());
-        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        style.setFont(font);
+        CellStyle headerRowStyle = FileProcessorUtils.createHeaderRowStyle(workbook);
 
-        Cell cellA = row0.createCell(0);
-        cellA.setCellValue("Msg ID");
-        cellA.setCellStyle(style);
+        List<String> headerRowCellsValues = FileProcessorUtils.createHeaderRowValues();
 
-        Cell cellB = row0.createCell(1);
-        cellB.setCellValue("Date of adding to the file ");
-        cellB.setCellStyle(style);
-
-        Cell cellC = row0.createCell(2);
-        cellC.setCellValue("Project");
-        cellC.setCellStyle(style);
-
-        Cell cellD = row0.createCell(3);
-        cellD.setCellValue("Value");
-        cellD.setCellStyle(style);
-
-        Cell cellE = row0.createCell(4);
-        cellE.setCellValue("Deadline");
-        cellE.setCellStyle(style);
-
-        Cell cellF = row0.createCell(5);
-        cellF.setCellValue("Date of receiving mail");
-        cellF.setCellStyle(style);
+        List<Cell> cells = IntStream.range(0, headerRowCellsValues.size())
+                .mapToObj(i -> createCell(row0, i, headerRowStyle, headerRowCellsValues.get(i)))
+                .collect(Collectors.toList());
 
         sheet.setColumnWidth(0, 0);
         sheet.setColumnWidth(1, 0);
@@ -245,5 +162,17 @@ public class FileProcessor {
         return workbook;
     }
 
+    private Cell createCell(Row row, int index, CellStyle style, Object cellValue) {
+
+        Cell cell = row.createCell(index);
+
+        if ((cellValue.getClass().equals(String.class))) {
+            cell.setCellValue((String) cellValue);
+        } else {
+            cell.setCellValue((LocalDate) cellValue);
+        }
+        cell.setCellStyle(style);
+        return cell;
+    }
 
 }

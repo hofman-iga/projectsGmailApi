@@ -10,7 +10,7 @@ public class Project {
     String value;
     String deadline;
 
-    public Project(Message gmailMessage, MessageProcessor messageProcessor){
+    public Project(Message gmailMessage, MessageProcessor messageProcessor) {
         this.messageProcessor = messageProcessor;
         this.gmailMessage = gmailMessage;
         this.name = getProjectName(gmailMessage, messageProcessor);
@@ -18,19 +18,19 @@ public class Project {
         this.deadline = getProjectDeadline(gmailMessage, messageProcessor);
     }
 
-    private String getProjectName (Message gmailMessage, MessageProcessor messageProcessor) {
+    private String getProjectName(Message gmailMessage, MessageProcessor messageProcessor) {
         String[] messageParts = messageProcessor.messageSplit(gmailMessage);
         String projectName = messageParts[2];
         return projectName;
     }
 
-    private String getProjectValue (Message gmailMessage, MessageProcessor messageProcessor) {
+    private String getProjectValue(Message gmailMessage, MessageProcessor messageProcessor) {
         String[] messageParts = messageProcessor.messageSplit(gmailMessage);
         String value = " ";
 
         for (int i = 0; i < messageParts.length; i++) {
 
-            if (messageParts[i].equals("Deadline:") || messageParts[i].equals("Deadline")){
+            if (messageParts[i].equals("Deadline:") || messageParts[i].equals("Deadline")) {
                 StringBuilder sb = new StringBuilder();
                 for (int j = 4; j < i; j++) {
                     sb.append(messageParts[j]);
@@ -41,16 +41,16 @@ public class Project {
         return value;
     }
 
-    private String getProjectDeadline (Message gmailMessage, MessageProcessor messageProcessor) {
+    private String getProjectDeadline(Message gmailMessage, MessageProcessor messageProcessor) {
         String[] messageParts = messageProcessor.messageSplit(gmailMessage);
         String deadline = " ";
 
         for (int i = 0; i < messageParts.length; i++) {
-            if (messageParts[i].equals("Deadline:") || messageParts[i].equals("Deadline")){
-                if (messageParts[i+1].equals("ASAP")) {
-                    deadline = messageParts[i+1];
+            if (messageParts[i].equals("Deadline:") || messageParts[i].equals("Deadline")) {
+                if (messageParts[i + 1].equals("ASAP")) {
+                    deadline = messageParts[i + 1];
                 } else {
-                    deadline = (messageParts[i+1] + " " + messageParts[i+2]);
+                    deadline = (messageParts[i + 1] + " " + messageParts[i + 2]);
                 }
             }
         }
@@ -67,5 +67,9 @@ public class Project {
 
     public String getDeadline() {
         return deadline;
+    }
+
+    public Message getGmailMessage() {
+        return gmailMessage;
     }
 }
