@@ -1,7 +1,6 @@
 package pl.hofman.projectsGmailApi;
 
 import com.google.api.services.gmail.model.Message;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -12,7 +11,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
@@ -34,7 +32,6 @@ public class FileProcessor {
         for (Message msg : mainGmailMessagesInThread) {
             Project project = new Project(msg, messageProcessor);
             fileName = chooseFileName(project);
-            //String projectName = project.getProjectName(msg, messageProcessor);
 
             try {
                 FileInputStream inputStream = new FileInputStream(new File(fileName));
@@ -83,7 +80,6 @@ public class FileProcessor {
             fileName = month + excelFileExtension;
 
         } else {
-
             String deadlineMonth = deadline.substring(3, 5);
             fileName = Optional.ofNullable(MonthEnum.getMonthByNumber(deadlineMonth))
                     .map(monthEnum -> (monthEnum.getName() + excelFileExtension))
@@ -123,10 +119,8 @@ public class FileProcessor {
             Row row = sheet.createRow(rowCount + 1);
 
             //creating new columns in row
-            List<Cell> cells =
-                    IntStream.range(0, cellValues.size())
-                            .mapToObj(i -> createCell(row, i, cellStyles.get(i), cellValues.get(i)))
-                            .collect(Collectors.toList());
+            IntStream.range(0, cellValues.size())
+                    .forEach(i -> createCell(row, i, cellStyles.get(i), cellValues.get(i)));
 
             // Write the output to the file
             FileOutputStream fileOut = new FileOutputStream(fileName);
@@ -148,9 +142,9 @@ public class FileProcessor {
 
         List<String> headerRowCellsValues = FileProcessorUtils.createHeaderRowValues();
 
-        List<Cell> cells = IntStream.range(0, headerRowCellsValues.size())
-                .mapToObj(i -> createCell(row0, i, headerRowStyle, headerRowCellsValues.get(i)))
-                .collect(Collectors.toList());
+        // creating cells
+        IntStream.range(0, headerRowCellsValues.size())
+                .forEach(i -> createCell(row0, i, headerRowStyle, headerRowCellsValues.get(i)));
 
         sheet.setColumnWidth(0, 0);
         sheet.setColumnWidth(1, 0);
