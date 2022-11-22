@@ -5,6 +5,7 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.Message;
+import org.apache.commons.math3.stat.descriptive.summary.Product;
 
 
 import java.io.*;
@@ -26,7 +27,7 @@ public class AddingProjectToExcel {
 
         String user = "me";
 
-        String userQuery = "subject:WEProof project AND newer_than:";
+        String userQuery = "subject:\"WEProof project\" OR subject:Nagajob AND newer_than:";
 
         MessageProcessor messageProcessor = new MessageProcessor();
         FileProcessor fileProcessor = new FileProcessor(messageProcessor);
@@ -39,7 +40,6 @@ public class AddingProjectToExcel {
         messageProcessor.projectMessagesDisplay(mainGmailMessages);
 
         fileProcessor.saveMessagesInTheFile(mainGmailMessages);
-
     }
 
     private static int askUserForNumberOfDays() {
