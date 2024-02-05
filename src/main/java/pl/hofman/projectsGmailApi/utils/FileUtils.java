@@ -1,7 +1,8 @@
-package pl.hofman.projectsGmailApi;
+package pl.hofman.projectsGmailApi.utils;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import pl.hofman.projectsGmailApi.model.Project;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -10,7 +11,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-public class FileProcessorUtils {
+public class FileUtils {
 
     public static String getWrongDeadlineFormatErrorMsg(String messageId, String projectName, String fileName) {
 

@@ -1,4 +1,4 @@
-package pl.hofman.projectsGmailApi;
+package pl.hofman.projectsGmailApi.service;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -10,6 +10,7 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.GmailScopes;
+import pl.hofman.projectsGmailApi.AddingProjectToExcel;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;

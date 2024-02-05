@@ -1,10 +1,16 @@
-package pl.hofman.projectsGmailApi;
+package pl.hofman.projectsGmailApi.service;
 
 import com.google.api.services.gmail.model.Message;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbookFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import pl.hofman.projectsGmailApi.utils.FileUtils;
+import pl.hofman.projectsGmailApi.model.MonthEnum;
+import pl.hofman.projectsGmailApi.model.Project;
+import pl.hofman.projectsGmailApi.utils.MessageUtils;
 
 import java.io.*;
 import java.text.DateFormat;
@@ -14,12 +20,11 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 
+@Service
 public class FileProcessor {
 
-    MessageProcessor messageProcessor;
-
-    public FileProcessor(MessageProcessor messageProcessor) {
-        this.messageProcessor = messageProcessor;
+    @Autowired
+    public FileProcessor() {
     }
 
     public void saveMessagesInTheFile(List<Message> mainGmailMessagesInThread) throws NullPointerException, IOException {
@@ -30,7 +35,7 @@ public class FileProcessor {
                 "--------------------------------------------\n\n");
 
         for (Message msg : mainGmailMessagesInThread) {
-            Project project = new Project(msg, messageProcessor);
+            Project project = new Project(msg);
             fileName = chooseFileName(project);
 
             try {
@@ -45,7 +50,7 @@ public class FileProcessor {
                 throw new IOException("Not possible to create file " + fileName);
             }
 
-            messageProcessor.singleProjectMessagesDisplay(msg);
+            MessageUtils.singleProjectMessagesDisplay(project, msg);
 
             try {
                 addNewMsgToTheFile(fileName, workbook, project, msg);
@@ -66,7 +71,7 @@ public class FileProcessor {
 
         if (deadline.length() < 2) {
             fileName = errorFileName + excelFileExtension;
-            System.out.println(FileProcessorUtils.getWrongDeadlineFormatErrorMsg(project.getGmailMessage().getId(),
+            System.out.println(FileUtils.getWrongDeadlineFormatErrorMsg(project.getGmailMessage().getId(),
                     projectName, fileName));
 
         } else if (deadline.equals("ASAP")) {
@@ -84,7 +89,7 @@ public class FileProcessor {
             fileName = Optional.ofNullable(MonthEnum.getMonthByNumber(deadlineMonth))
                     .map(monthEnum -> (monthEnum.getName() + excelFileExtension))
                     .orElseGet(() -> {
-                        System.out.println(FileProcessorUtils.getWrongDeadlineFormatErrorMsg(project.getGmailMessage().getId(), projectName, errorFileName + excelFileExtension));
+                        System.out.println(FileUtils.getWrongDeadlineFormatErrorMsg(project.getGmailMessage().getId(), projectName, errorFileName + excelFileExtension));
                         return (errorFileName + excelFileExtension);
                     });
         }
@@ -95,8 +100,8 @@ public class FileProcessor {
 
         boolean checkIfExists = false;
 
-        Map<Integer, Object> cellValues = FileProcessorUtils.createCellValuesMap(project);
-        Map<Integer, CellStyle> cellStyles = FileProcessorUtils.createCellStylesMap(workbook);
+        Map<Integer, Object> cellValues = FileUtils.createCellValuesMap(project);
+        Map<Integer, CellStyle> cellStyles = FileUtils.createCellStylesMap(workbook);
 
         XSSFSheet sheet = workbook.getSheetAt(0);
 
@@ -138,16 +143,16 @@ public class FileProcessor {
         sheet = workbook.createSheet("Sheet1");
         Row row0 = sheet.createRow(0);
 
-        CellStyle headerRowStyle = FileProcessorUtils.createHeaderRowStyle(workbook);
+        CellStyle headerRowStyle = FileUtils.createHeaderRowStyle(workbook);
 
-        List<String> headerRowCellsValues = FileProcessorUtils.createHeaderRowValues();
+        List<String> headerRowCellsValues = FileUtils.createHeaderRowValues();
 
         // creating cells
         IntStream.range(0, headerRowCellsValues.size())
                 .forEach(i -> createCell(row0, i, headerRowStyle, headerRowCellsValues.get(i)));
 
-        sheet.setColumnWidth(0, 0);
-        sheet.setColumnWidth(1, 0);
+        sheet.setColumnWidth(0, 3000);
+        sheet.setColumnWidth(1, 3000);
         sheet.setColumnWidth(2, 3000);
         sheet.setColumnWidth(3, 3000);
         sheet.setColumnWidth(4, 3000);

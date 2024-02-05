@@ -1,4 +1,4 @@
-package pl.hofman.projectsGmailApi;
+package pl.hofman.projectsGmailApi.model;
 
 import java.util.Arrays;
 import java.util.HashMap;

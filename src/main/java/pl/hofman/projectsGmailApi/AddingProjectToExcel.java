@@ -5,14 +5,15 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.Message;
-import org.apache.commons.math3.stat.descriptive.summary.Product;
-
+import pl.hofman.projectsGmailApi.model.Project;
+import pl.hofman.projectsGmailApi.service.FileProcessor;
+import pl.hofman.projectsGmailApi.service.MessageProcessor;
 
 import java.io.*;
 import java.security.GeneralSecurityException;
 import java.util.*;
 
-import static pl.hofman.projectsGmailApi.AuthGmail.*;
+import static pl.hofman.projectsGmailApi.service.AuthGmail.*;
 
 public class AddingProjectToExcel {
 
@@ -30,7 +31,7 @@ public class AddingProjectToExcel {
         String userQuery = "subject:\"WEProof project\" OR subject:Nagajob AND newer_than:";
 
         MessageProcessor messageProcessor = new MessageProcessor();
-        FileProcessor fileProcessor = new FileProcessor(messageProcessor);
+        FileProcessor fileProcessor = new FileProcessor();
 
         //Ask user to give number of days in the past (including today) to check mails from
         int daysNumber = askUserForNumberOfDays();
